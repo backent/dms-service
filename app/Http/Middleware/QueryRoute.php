@@ -1,42 +1,51 @@
 <?php
 
-namespace App\Support;
+namespace App\Http\Middleware;
 
-class QueryRoute
+use App\Http\Middleware\BaseMiddleware;
+
+class QueryRoute extends BaseMiddleware
 {
-    public function __construct($request, $force = false, $replace = '')
+    protected function Initiate()
     {
-        $this->_Request = $request;
-        if ($force) {
-            $this->Query = $replace ? $replace : '';
-        } else {
-            $this->Query = !empty($this->_Request->route('query')) ? $this->_Request->route('query') : null;
+        $this->QueryContent = [];
+        try {
+            $this->QueryContent = json_decode($this->_Request->getContent(), true);
+        } catch (\Exception $e) {
         }
+        $this->Query = !empty($this->_Request->route('query')) ? $this->_Request->route('query') : null;
         $this->ArrQuery = [];
         if ($this->Query) {
             $this->Query = explode('/', $this->Query);
             $this->CountQuery = count($this->Query);
-            if( $this->CountQuery%2 == 0 ){
+            if ($this->CountQuery%2 == 0) {
                 for ($i = 0; $i < $this->CountQuery; $i++) {
-                    if( $i%2 == 0 ){
+                    if ( $i%2 == 0 ) {
                         $this->ArrQuery[$this->Query[$i]] = null;
                     }
-                    if( $i%2 == 1 ){
+                    if ( $i%2 == 1 ) {
                         $this->ArrQuery[$this->Query[$i-1]] = urldecode($this->Query[$i]);
                     }
                 }
                 $this->Param = true;
-            }else{
+            } else {
                 $this->Param = false;
             }
         } else {
             $this->Param = true;
         }
-        return $this;
     }
 
-    public function get()
+    protected function Validation(): bool
     {
+        if (!$this->Param) {
+        }
+        return true;
+    }
+
+    protected function Preparation()
+    {
+        $this->OriginalArrQuery = $this->ArrQuery;
         if (isset($this->_Request->query()['take'])) {
             $this->ArrQuery['take'] = $this->_Request->take;
         }
@@ -71,11 +80,11 @@ class QueryRoute
                 $this->ArrQuery['with.total'] = true;
             }
         } else {
-            $this->ArrQuery['with.total'] = false;
+            $this->ArrQuery['with.total'] = true;
         }
-        $this->OriginalArrQuery = (object)$this->ArrQuery;
         $this->_Request->{'ArrQuery'} = (object)$this->ArrQuery;
-        $this->_Request->{'OriginalArrQuery'} = $this->OriginalArrQuery;
-        return $this->_Request;
+        $this->_Request->{'OriginalArrQuery'} = (object)$this->OriginalArrQuery;
+        $this->_Request->{'QueryContent'} = (object)$this->QueryContent;
     }
 }
+;
