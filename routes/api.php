@@ -19,6 +19,9 @@ use Illuminate\Support\Facades\Route;
 Route::post('/upload', [AWSController::class, 'upload']);
 Route::post('/move', [AWSController::class, 'move']);
 Route::post('/remove', [AWSController::class, 'remove']);
+Route::get('/ping', function() {
+  return 'PONG';
+});
 Route::prefix('/auth')->group(function() {
     Route::post('/login', [AuthController::class, 'login'])
     ->middleware([
