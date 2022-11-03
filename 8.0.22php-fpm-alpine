@@ -1,0 +1,54 @@
+FROM php:8.0.20-fpm-alpine3.16
+
+# Add Repositories
+RUN rm -f /etc/apk/repositories &&\
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.13/main" >> /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.13/community" >> /etc/apk/repositories
+
+# Add Build Dependencies
+RUN apk update && apk add --no-cache --virtual .build-deps  \
+    zlib-dev \
+    libjpeg-turbo-dev \
+    libpng-dev \
+    libxml2-dev \
+    bzip2-dev
+
+# Add Production Dependencies
+RUN apk add --update --no-cache \
+    jpegoptim \
+    pngquant \
+    optipng \
+    supervisor \
+    nano \
+    icu-dev \
+    freetype-dev \
+    nginx \
+    mysql-client \
+    libzip-dev \
+    git
+
+# Configure & Install Extension
+RUN docker-php-ext-configure \
+    opcache --enable-opcache &&\
+    docker-php-ext-configure gd --with-jpeg=/usr/include/ --with-freetype=/usr/include/ &&\
+    docker-php-ext-configure exif &&\
+    docker-php-ext-install \
+    opcache \
+    mysqli \
+    pdo \
+    pdo_mysql \
+    sockets \  
+    intl \
+    gd \
+    xml \
+    zip \
+    bz2 \
+    pcntl \
+    bcmath \
+    exif && \
+    docker-php-ext-enable exif
+
+# Install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Remove Build Dependencies
+RUN apk del -f .build-deps
